@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create PDF Invoice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"] {
+            width: calc(100% - 20px);
+            padding: 8px;
+            margin: 5px 10px 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .form-group input[readonly] {
+            background-color: #f9f9f9;
+        }
+        .product {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .product:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-add {
+            background-color: #28a745;
+        }
+        .btn-add:hover {
+            background-color: #218838;
+        }
+    </style>
+    <script>
+        let productIndex = 1;
+
+        function addProduct() {
+            const productsDiv = document.getElementById('products');
+            const newProductDiv = document.createElement('div');
+            newProductDiv.classList.add('product');
+            newProductDiv.innerHTML = `
+                <label>Product Name: <input type="text" name="products[${productIndex}].name" oninput="updateTotal()"></label>
+                <label>Quantity: <input type="number" name="products[${productIndex}].quantity" oninput="updateTotal()"></label>
+                <label>Price: <input type="number" step="0.01" name="products[${productIndex}].price" oninput="updateTotal()"></label>
+                <br>
+            `;
+            productsDiv.appendChild(newProductDiv);
+            productIndex++;
+        }
+
+        function updateTotal() {
+            const products = document.getElementsByClassName('product');
+            let totalAmount = 0;
+
+            for (let i = 0; i < products.length; i++) {
+                const quantityInput = products[i].querySelector('input[name*="quantity"]');
+                const priceInput = products[i].querySelector('input[name*="price"]');
+
+                const quantity = parseFloat(quantityInput.value) || 0;
+                const price = parseFloat(priceInput.value) || 0;
+
+                totalAmount += quantity * price;
+            }
+
+            document.getElementById('total_amount').value = totalAmount.toFixed(2);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Create PDF Invoice</h1>
+        <form action="/create-pdf" method="post">
+            <div id="products">
+                <div class="product">
+                    <label>Product Name: <input type="text" name="products[0].name" oninput="updateTotal()"></label>
+                    <label>Quantity: <input type="number" name="products[0].quantity" oninput="updateTotal()"></label>
+                    <label>Price: <input type="number" step="0.01" name="products[0].price" oninput="updateTotal()"></label>
+                    <br>
+                </div>
+            </div>
+            <button type="button" class="btn btn-add" onclick="addProduct()">Add Another Product</button>
+            <br><br>
+            <div class="form-group">
+                <label>Total Amount: <input type="number" step="0.01" id="total_amount" name="total_amount" readonly></label>
+            </div>
+            <button type="submit" class="btn">Create PDF</button>
+        </form>
+    </div>
+</body>
+</html>
