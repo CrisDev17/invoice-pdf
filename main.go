@@ -13,15 +13,15 @@ import (
 
 // Product - struct sản phẩm
 type Product struct {
-	Name     string  `form:"products[0].name"`
-	Quantity int     `form:"products[0].quantity"`
-	Price    float64 `form:"products[0].price"`
+	Name     string
+	Quantity int
+	Price    float64
 }
 
 // Invoice - struct hóa đơn
 type Invoice struct {
-	Products    []Product `form:"products"`
-	TotalAmount float64   `form:"total_amount"`
+	Products    []Product
+	TotalAmount float64
 }
 
 // Hàm generatePDF để tạo PDF từ dữ liệu hóa đơn
@@ -38,7 +38,6 @@ func generatePDF(invoice Invoice) ([]byte, error) {
 	pdf.Cell(30, 10, "Price")
 	pdf.Cell(30, 10, "Total")
 	pdf.Ln(10)
-
 	for _, product := range invoice.Products {
 		pdf.Cell(40, 10, product.Name)
 		pdf.Cell(30, 10, strconv.Itoa(product.Quantity))
@@ -62,39 +61,42 @@ func generatePDF(invoice Invoice) ([]byte, error) {
 
 func main() {
 	r := gin.Default()
-
-	// Load template HTML
 	r.LoadHTMLFiles("./templates/index.html")
 
-	// Define route for the root path
 	r.GET("/", func(c *gin.Context) {
-		// Render the index.html template when accessing the root path
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
-	// Define route for creating PDF
 	r.POST("/create-pdf", func(c *gin.Context) {
-		var invoice Invoice
-		// Bind form data to the Invoice struct
-		if err := c.ShouldBind(&invoice); err != nil {
-			log.Printf("Error binding data: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
+		var products []Product
+		for i := 0; ; i++ {
+			name := c.PostForm(fmt.Sprintf("products[%d].name", i))
+			if name == "" {
+				break
+			}
+			quantity, _ := strconv.Atoi(c.PostForm(fmt.Sprintf("products[%d].quantity", i)))
+			price, _ := strconv.ParseFloat(c.PostForm(fmt.Sprintf("products[%d].price", i)), 64)
+			products = append(products, Product{Name: name, Quantity: quantity, Price: price})
 		}
-		// Generate PDF based on the invoice data
+		totalAmount, _ := strconv.ParseFloat(c.PostForm("total_amount"), 64)
+
+		invoice := Invoice{
+			Products:    products,
+			TotalAmount: totalAmount,
+		}
+
+		log.Printf("Invoice: %+v", invoice)
 		pdfBytes, err := generatePDF(invoice)
 		if err != nil {
 			log.Printf("Error generating PDF: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		// Send the generated PDF as a response
 		c.Header("Content-Type", "application/pdf")
 		c.Header("Content-Disposition", "attachment; filename=invoice.pdf")
 		c.Data(http.StatusOK, "application/pdf", pdfBytes)
 	})
 
-	// Start the server on port 8080
 	log.Println("Server running at http://localhost:8080")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatalf("Error starting server: %v", err)
